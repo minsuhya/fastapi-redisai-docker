@@ -1,0 +1,119 @@
+version: '3'
+services:
+  fastapi:
+    build: .
+    image: fastapi
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    ports:
+      - 8080:8080
+    volumes:
+      - ./app:/code/app
+    networks:
+      - redis-cluster-net
+
+  redis-master-1:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    networks:
+      - redis-cluster-net
+    
+  redis-replica-1:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master-1
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    depends_on:
+      - redis-master-1
+    networks:
+      - redis-cluster-net
+
+
+  redis-master-2:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    networks:
+      - redis-cluster-net
+
+  redis-replica-2:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master-2
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    depends_on:
+      - redis-master-2
+    networks:
+      - redis-cluster-net
+
+
+  redis-master-3:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    networks:
+      - redis-cluster-net
+
+  redis-replica-3:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    volumes:
+      - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./conf/redis/redisai.so:/usr/lib/redis/modules/redisai.so
+    environment:
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master-3
+      - ALLOW_EMPTY_PASSWORD=yes
+    command: redis-server /usr/local/etc/redis/redis.conf --port 6379 --protected-mode no
+    depends_on:
+      - redis-master-3
+    networks:
+      - redis-cluster-net
+
+  redis-cluster-entry:
+    image: bitnami/redis
+    user: root # run a Bitnami non-root container image as a root container image
+    command: redis-cli --cluster create redis-master-1:6379 redis-master-2:6379 redis-master-3:6379 redis-replica-1:6379 redis-replica-2:6379 redis-replica-3:6379 --cluster-yes
+    depends_on:
+      - redis-master-1
+      - redis-master-2
+      - redis-master-3
+      - redis-replica-1
+      - redis-replica-2
+      - redis-replica-3
+    networks:
+      - redis-cluster-net
+
+networks:
+  redis-cluster-net:
+    driver: bridge
